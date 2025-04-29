@@ -1,0 +1,8 @@
+numpy==2.2.5
+opencv-python==4.11.0.86
+django==4.2 
+djangorestframework==3.14 
+psycopg2-binary==2.9 
+ultralytics==8.0 
+reportlab==4.0 
+openpyxl==3.1

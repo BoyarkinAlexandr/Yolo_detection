@@ -6,11 +6,11 @@ from .serializers import DetectionHistorySerializer
 from .yolo_processor import YOLOProcessor
 from django.conf import settings
 import os
-from reportlab.lib.pagesizes import letter
-from reportlab.pdfgen import canvas
 from openpyxl import Workbook
 from django.http import FileResponse
 import io
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import letter
 
 class UploadMediaView(APIView):
     def post(self, request):
@@ -19,7 +19,6 @@ class UploadMediaView(APIView):
         output_filename = f"result_{file.name}"
         output_path = os.path.join(settings.MEDIA_ROOT, 'results', output_filename)
         
-        # Сохранение файла
         detection = DetectionHistory.objects.create(
             media_type=media_type,
             media_file=file,
@@ -37,7 +36,6 @@ class UploadMediaView(APIView):
                 detection.media_file.path, output_path
             )
         
-        # Обновление кол-во посетителей
         detection.person_count = person_count
         detection.processing_time = processing_time
         detection.result_file = os.path.join('results', output_filename)
@@ -52,6 +50,21 @@ class HistoryView(APIView):
         serializer = DetectionHistorySerializer(detections, many=True)
         return Response(serializer.data)
 
+class HistoryDetailView(APIView):
+    def delete(self, request, pk):
+        try:
+            detection = DetectionHistory.objects.get(pk=pk)
+            if detection.media_file and os.path.isfile(detection.media_file.path):
+                os.remove(detection.media_file.path)
+            if detection.result_file:
+                result_path = os.path.join(settings.MEDIA_ROOT, str(detection.result_file))
+                if os.path.isfile(result_path):
+                    os.remove(result_path)
+            detection.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        except DetectionHistory.DoesNotExist:
+            return Response({"error": "Запись не найдена"}, status=status.HTTP_404_NOT_FOUND)
+
 class ReportView(APIView):
     def get(self, request, format_type):
         detections = DetectionHistory.objects.all().order_by('-timestamp')
@@ -59,10 +72,10 @@ class ReportView(APIView):
         if format_type == 'pdf':
             buffer = io.BytesIO()
             p = canvas.Canvas(buffer, pagesize=letter)
-            p.drawString(100, 750, "Отчёт об количестве посетителей")
+            p.drawString(100, 750, "Count of people report")
             y = 700
             for detection in detections:
-                p.drawString(100, y, f"{detection.timestamp}: {detection.person_count} людей, {detection.media_type}")
+                p.drawString(100, y, f"{detection.timestamp}: {detection.person_count} people, {detection.media_type}")
                 y -= 20
             p.showPage()
             p.save()

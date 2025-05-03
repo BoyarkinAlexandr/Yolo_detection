@@ -19,7 +19,7 @@ class UploadMediaView(APIView):
         output_filename = f"result_{file.name}"
         output_path = os.path.join(settings.MEDIA_ROOT, 'results', output_filename)
         
-        # Save uploaded file
+        # Сохранение файла
         detection = DetectionHistory.objects.create(
             media_type=media_type,
             media_file=file,
@@ -27,7 +27,6 @@ class UploadMediaView(APIView):
             processing_time=0
         )
         
-        # Process with YOLO
         processor = YOLOProcessor()
         if media_type == 'image':
             person_count, processing_time = processor.process_image(
@@ -38,7 +37,7 @@ class UploadMediaView(APIView):
                 detection.media_file.path, output_path
             )
         
-        # Update detection record
+        # Обновление кол-во посетителей
         detection.person_count = person_count
         detection.processing_time = processing_time
         detection.result_file = os.path.join('results', output_filename)
@@ -60,10 +59,10 @@ class ReportView(APIView):
         if format_type == 'pdf':
             buffer = io.BytesIO()
             p = canvas.Canvas(buffer, pagesize=letter)
-            p.drawString(100, 750, "Visitor Counting Report")
+            p.drawString(100, 750, "Отчёт об количестве посетителей")
             y = 700
             for detection in detections:
-                p.drawString(100, y, f"{detection.timestamp}: {detection.person_count} persons, {detection.media_type}")
+                p.drawString(100, y, f"{detection.timestamp}: {detection.person_count} людей, {detection.media_type}")
                 y -= 20
             p.showPage()
             p.save()
@@ -73,11 +72,11 @@ class ReportView(APIView):
         elif format_type == 'excel':
             wb = Workbook()
             ws = wb.active
-            ws.title = "Visitor Counting Report"
-            ws.append(["Timestamp", "Media Type", "Person Count", "Processing Time"])
+            ws.title = "Отчёт об количестве посетителей"
+            ws.append(["Время", "Тип файла", "Количество людей", "Время обработки"])
             for detection in detections:
                 ws.append([
-                    detection.timestamp,
+                    detection.timestamp.strftime('%Y-%m-%d %H:%M:%S') if detection.timestamp else '',
                     detection.media_type,
                     detection.person_count,
                     detection.processing_time
@@ -87,4 +86,4 @@ class ReportView(APIView):
             buffer.seek(0)
             return FileResponse(buffer, as_attachment=True, filename='report.xlsx')
         
-        return Response({"error": "Invalid format"}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"error": "Неверный формат"}, status=status.HTTP_400_BAD_REQUEST)

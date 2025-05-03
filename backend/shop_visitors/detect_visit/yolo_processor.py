@@ -6,15 +6,15 @@ from django.conf import settings
 
 class YOLOProcessor:
     def __init__(self):
-        self.model = YOLO('yolov8n.pt')  # Load pretrained YOLOv8 nano model
+        self.model = YOLO('yolov8n.pt')
 
     def process_image(self, image_path, output_path):
         start_time = time.time()
         img = cv2.imread(image_path)
-        results = self.model(img, classes=[0])  # Class 0 is 'person'
+        results = self.model(img, classes=[0]) 
         person_count = len(results[0].boxes)
         
-        # Draw bounding boxes
+        
         annotated_img = results[0].plot()
         cv2.imwrite(output_path, annotated_img)
         
@@ -24,7 +24,8 @@ class YOLOProcessor:
     def process_video(self, video_path, output_path):
         start_time = time.time()
         cap = cv2.VideoCapture(video_path)
-        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+        #fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+        fourcc = cv2.VideoWriter_fourcc(*'avc1')
         out = cv2.VideoWriter(output_path, fourcc, 20.0, (int(cap.get(3)), int(cap.get(4))))
         person_count = 0
         

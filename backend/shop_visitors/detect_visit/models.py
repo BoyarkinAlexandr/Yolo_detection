@@ -1,7 +1,7 @@
 from django.db import models
 
 class DetectionHistory(models.Model):
-    media_type = models.CharField(max_length=10)  # image or video
+    media_type = models.CharField(max_length=10)
     media_file = models.FileField(upload_to='uploads/')
     result_file = models.FileField(upload_to='results/', null=True, blank=True)
     person_count = models.IntegerField()
